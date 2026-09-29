@@ -231,6 +231,12 @@
 					const block = document.createElement("div");
 					block.className = "colour-block";
 					block.style.backgroundColor = hex;
+					block.style.cursor = "pointer";
+					block.onclick = function()
+					{
+						document.querySelector("input[type=color]").value = hex;
+						saveStateInUrl(true);
+					};
 					if (targetRgb)
 					{
 						const similarity = rgbSimilarity(hexToRgb(hex), targetRgb);
@@ -263,9 +269,17 @@
 			updatePickerTable(legacy ? picker.legacyColours : picker.hexColours);
 		}
 
-		function saveStateInUrl()
+		function saveStateInUrl(push)
 		{
-			history.replaceState({}, undefined, location.pathname + "#i=" + document.querySelector("input[type=color]").value.substr(1) + "&p=" + active_picker);
+			const hash = "#i=" + document.querySelector("input[type=color]").value.substr(1) + "&p=" + active_picker;
+			if (push)
+			{
+				location.hash = hash;
+			}
+			else
+			{
+				history.replaceState({}, undefined, location.pathname + hash);
+			}
 		}
 
 		document.querySelector("input[type=color]").onchange = function()
