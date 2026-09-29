@@ -13,6 +13,75 @@
 		.colour-block {
 			height: 44px;
 			width: 44px;
+			cursor: pointer;
+			position: relative;
+			user-select: none;
+		}
+
+		.colour-block:focus-visible {
+			outline: 2px solid var(--bs-primary);
+			outline-offset: 2px;
+			z-index: 2;
+		}
+
+		.colour-block[data-hex]::after {
+			content: attr(data-hex);
+			position: absolute;
+			left: 50%;
+			bottom: calc(100% + 6px);
+			transform: translateX(-50%);
+			padding: 0.25rem 0.5rem;
+			border: 1px solid #fff;
+			border-radius: 0.375rem;
+			background: #000;
+			color: #fff;
+			font-size: 0.75rem;
+			line-height: 1.2;
+			white-space: nowrap;
+			pointer-events: none;
+			opacity: 0;
+			visibility: hidden;
+			z-index: 5;
+		}
+
+		.colour-block[data-hex]::before {
+			content: "";
+			position: absolute;
+			left: 50%;
+			bottom: calc(100% + 2px);
+			transform: translateX(-50%);
+			border: 5px solid transparent;
+			border-top-color: #000;
+			pointer-events: none;
+			opacity: 0;
+			visibility: hidden;
+			z-index: 5;
+		}
+
+		/* First row: flip tooltip below so it is not clipped by the scroll container */
+		#picker-table tr:first-child .colour-block[data-hex]::after {
+			bottom: auto;
+			top: calc(100% + 6px);
+		}
+
+		#picker-table tr:first-child .colour-block[data-hex]::before {
+			bottom: auto;
+			top: calc(100% + 2px);
+			border-top-color: transparent;
+			border-bottom-color: #000;
+		}
+
+		.colour-block[data-hex]:hover,
+		.colour-block[data-hex]:focus-visible {
+			z-index: 6;
+		}
+
+		.colour-block[data-hex]:hover::after,
+		.colour-block[data-hex]:hover::before,
+		.colour-block[data-hex]:focus-visible::after,
+		.colour-block[data-hex]:focus-visible::before {
+			opacity: 1;
+			visibility: visible;
 		}
 
 		.colour-overlay {
@@ -20,6 +89,7 @@
 			/*text-shadow: #fff 0 0 10px;
 			mix-blend-mode: difference;*/
 			text-shadow: #000 0 0 5px, #000 0 0 10px;
+			pointer-events: none;
 		}
 
 		#picker-table tr:first-child td:first-child > div {
@@ -42,10 +112,11 @@
 <body data-bs-theme="dark">
 	<?php require "components/navbar.php"; ?>
 	<div class="container pt-3">
-		<div class="input-group mb-3">
+		<div class="input-group mb-1">
 			<input class="form-control form-control-color" type="color" style="flex:0 0 auto;width:50px" value="#ff0000" />
 			<input class="form-control" type="text" value="#ff0000" maxlength="7" />
 		</div>
+		<p class="text-body-secondary small mb-3">Hover a swatch for its hex. Double-click to use it as the search color.</p>
 		<div class="row" style="overflow:hidden">
 			<div class="col-5 col-lg-4" id="picker-cards" style="height:calc(100vh - 126px);overflow: auto;">
 				Loading...
@@ -210,6 +281,13 @@
 			return 1.0 - (rgbDistance(e1, e2) / 765.0);
 		}
 
+		function setSelectedColor(hex)
+		{
+			document.querySelector("input[type=color]").value = hex;
+			document.querySelector("input[type=text]").value = hex;
+			updatePickerCards();
+		}
+
 		function updatePickerTable(hexColours)
 		{
 			const targetRgb = document.querySelector("input[type=text]").value.length == 7 ? hexToRgb(document.querySelector("input[type=text]").value) : undefined;
@@ -225,6 +303,18 @@
 					const block = document.createElement("div");
 					block.className = "colour-block";
 					block.style.backgroundColor = hex;
+					block.dataset.hex = hex;
+					block.setAttribute("aria-label", "Color " + hex + ". Double-click or press Enter to use as search color.");
+					block.tabIndex = 0;
+					block.ondblclick = () => { setSelectedColor(block.dataset.hex); };
+					block.onkeydown = (e) =>
+					{
+						if (e.key == "Enter" || e.key == " ")
+						{
+							e.preventDefault();
+							setSelectedColor(block.dataset.hex);
+						}
+					};
 					if (targetRgb)
 					{
 						const similarity = rgbSimilarity(hexToRgb(hex), targetRgb);
