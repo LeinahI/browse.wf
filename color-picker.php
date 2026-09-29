@@ -59,17 +59,6 @@
 	<script>
 		let active_picker = "/Lotus/Types/StoreItems/SuitCustomizations/ColourPickerPrimeWarframesItemA";
 
-		const params = new URLSearchParams(location.hash.replace("#", ""));
-		if (params.has("i"))
-		{
-			document.querySelector("input[type=color]").value = "#" + params.get("i");
-			document.querySelector("input[type=text]").value = "#" + params.get("i");
-		}
-		if (params.has("p"))
-		{
-			active_picker = params.get("p");
-		}
-
 		Promise.all([
 			fetch("https://browse.wf/warframe-public-export-plus/ExportFlavour.json").then(res => res.json()),
 			fetch("https://browse.wf/warframe-public-export-plus/ExportImages.json").then(res => res.json()),
@@ -80,11 +69,27 @@
 			window.ExportImages = ExportImages;
 			window.dict = dict;
 
-			updatePickerCards();
+			window.onhashchange = function()
+			{
+				const params = new URLSearchParams(location.hash.replace("#", ""));
+				if (params.has("i"))
+				{
+					document.querySelector("input[type=color]").value = "#" + params.get("i");
+					document.querySelector("input[type=text]").value = "#" + params.get("i");
+				}
+				updatePickerCards();
+				if (params.has("p"))
+				{
+					active_picker = params.get("p");
+				}
+				setActivePicker(active_picker);
+			};
+			window.onhashchange();
 
 			onLanguageUpdate = function()
 			{
 				updatePickerCards();
+				setActivePicker(active_picker);
 			};
 		});
 
@@ -136,7 +141,10 @@
 			{
 				const card = document.createElement("div");
 				card.setAttribute("data-uniqueName", picker.uniqueName);
-				card.onclick = () => { setActivePicker(picker.uniqueName); };
+				card.onclick = () => {
+					setActivePicker(picker.uniqueName);
+					saveStateInUrl();
+				};
 				card.className = "card mb-2";
 				{
 					const row = document.createElement("div");
@@ -178,8 +186,6 @@
 				}
 				document.getElementById("picker-cards").appendChild(card);
 			});
-
-			setActivePicker(active_picker);
 		}
 
 		function peColourToHex(colour)
@@ -255,7 +261,10 @@
 			const picker = ExportFlavour[uniqueName.split(":legacy").join("")];
 			const legacy = (uniqueName.indexOf(":legacy") != -1);
 			updatePickerTable(legacy ? picker.legacyColours : picker.hexColours);
+		}
 
+		function saveStateInUrl()
+		{
 			history.replaceState({}, undefined, location.pathname + "#i=" + document.querySelector("input[type=color]").value.substr(1) + "&p=" + active_picker);
 		}
 
